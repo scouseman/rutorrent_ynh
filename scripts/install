@@ -16,78 +16,90 @@ if [[ ! $? -eq 0 ]]; then
 fi
 
 # Install sources
-if [ "$debian_version" = "jessie" ]; then
-  cd /tmp
-  wget http://www.deb-multimedia.org/pool/main/d/deb-multimedia-keyring/deb-multimedia-keyring_2015.6.1_all.deb
-  sudo dpkg -i deb-multimedia-keyring_2015.6.1_all.deb
+#if [ "$debian_version" = "jessie" ]; then
+#  cd /tmp
+#  wget http://www.deb-multimedia.org/pool/main/d/deb-multimedia-keyring/deb-multimedia-keyring_2015.6.1_all.deb
+#  sudo dpkg -i deb-multimedia-keyring_2015.6.1_all.deb
   
-  if [ -f /etc/apt/sources.list.d/rutorrent.list ]; then
-    sudo rm /etc/apt/sources.list.d/rutorrent.list
-  fi
+#  if [ -f /etc/apt/sources.list.d/rutorrent.list ]; then
+#    sudo rm /etc/apt/sources.list.d/rutorrent.list
+#  fi
 
-  echo 'deb http://ftp2.fr.debian.org/debian/ jessie main non-free' | sudo tee -a /etc/apt/sources.list.d/rutorrent.list
-  echo 'deb-src http://ftp2.fr.debian.org/debian/ jessie main non-free' | sudo tee -a /etc/apt/sources.list.d/rutorrent.list
-  echo 'deb ftp://ftp.deb-multimedia.org jessie main non-free' | sudo tee -a /etc/apt/sources.list.d/rutorrent.list
-else
-  echo 'deb http://ftp2.fr.debian.org/debian/ wheezy main non-free' | sudo tee -a /etc/apt/sources.list.d/rutorrent.list
-  echo 'deb-src http://ftp2.fr.debian.org/debian/ wheezy main non-free' | sudo tee -a /etc/apt/sources.list.d/rutorrent.list
-fi
+#  echo 'deb http://ftp2.fr.debian.org/debian/ jessie main non-free' | sudo tee -a /etc/apt/sources.list.d/rutorrent.list
+#  echo 'deb-src http://ftp2.fr.debian.org/debian/ jessie main non-free' | sudo tee -a /etc/apt/sources.list.d/rutorrent.list
+#  echo 'deb ftp://ftp.deb-multimedia.org jessie main non-free' | sudo tee -a /etc/apt/sources.list.d/rutorrent.list
+#else
+#  echo 'deb http://ftp2.fr.debian.org/debian/ wheezy main non-free' | sudo tee -a /etc/apt/sources.list.d/rutorrent.list
+#  echo 'deb-src http://ftp2.fr.debian.org/debian/ wheezy main non-free' | sudo tee -a /etc/apt/sources.list.d/rutorrent.list
+#fi
 
 # Install de dependencies
 sudo apt-get update
-sudo apt-get install -y htop automake libcppunit-dev libtool build-essential pkg-config libssl-dev libcurl4-openssl-dev libsigc++-2.0-dev libncurses5-dev screen subversion apache2-utils php5-cli php5-geoip unzip unrar rar zip ffmpeg buildtorrent mediainfo
-
+sudo apt-get install -y htop automake libcppunit-dev libtool build-essential pkg-config libssl-dev libcurl4-openssl-dev libsigc++-2.0-dev libncurses5-dev screen subversion apache2-utils php5-cli php5-geoip unzip unrar rar zip ffmpeg buildtorrent mediainfo openssl git libcurl4-openssl-devphp5-curl tmux  
 # Build xmlrpc
-cd /tmp
-sudo svn checkout http://svn.code.sf.net/p/xmlrpc-c/code/stable xmlrpc-c
-cd xmlrpc-c/
-sudo ./configure
-sudo make
-sudo make install
+	cd /tmp
+
+	# Download and install xmlrpc-c super-stable
+	curl -L http://sourceforge.net/projects/xmlrpc-c/files/Xmlrpc-c%20Super%20Stable/1.33.18/xmlrpc-c-1.33.18.tgz/download -o xmlrpc-c.tgz
+	tar zxvf xmlrpc-c.tgz
+	mv xmlrpc-c-1.* xmlrpc
+	cd xmlrpc
+	./configure --disable-cplusplus
+	make
+	make install
+
+	cd ..
+	rm -rv xmlrpc*
+
+	mkdir rtorrent
+	cd rtorrent
 
 # Build libtorrent
-cd /tmp
-sudo git clone https://github.com/rakshasa/libtorrent.git
-cd libtorrent
-sudo git checkout 0.13.6
-sudo ./autogen.sh
-sudo ./configure
-sudo make
-sudo make install
+	curl -L http://rtorrent.net/downloads/libtorrent-0.13.6.tar.gz -o libtorrent.tar.gz
+	tar -zxvf libtorrent.tar.gz
+	cd libtorrent-0.13.6
+	./autogen.sh
+	./configure
+	make
+	make install
+
+	cd ..
+
 
 # Build rtorrent
-cd /tmp
-sudo git clone https://github.com/rakshasa/rtorrent.git
-cd rtorrent
-sudo git checkout 0.9.6
-sudo ./autogen.sh
-sudo ./configure --with-xmlrpc-c
-sudo make
-sudo make install
+	curl -L http://rtorrent.net/downloads/rtorrent-0.9.6.tar.gz -o rtorrent.tar.gz
+	tar -zxvf rtorrent.tar.gz
+	cd rtorrent-0.9.6
+	./autogen.sh
+	./configure --with-xmlrpc-c
+	make
+	make install
 
-sudo ldconfig
+	cd ../..
+	rm -rv rtorrent
+
+	ldconfig
 
 # Install rutorrent
-sudo git clone https://github.com/Novik/ruTorrent.git /var/www/rutorrent
 
-# Install rutorrent plugins
-cd /var/www/rutorrent/plugins/
+	curl -L http://dl.bintray.com/novik65/generic/rutorrent-3.6.tar.gz -o rutorrent-3.6.tar.gz
+	tar -zxvf rutorrent-3.6.tar.gz
 
-sudo git clone https://github.com/xombiemp/rutorrentMobile.git mobile
+	if [ -d /var/www/html/rutorrent ]; then
+		rm -r /var/www/html/rutorrent
+	fi
 
-sudo svn checkout http://svn.rutorrent.org/svn/filemanager/trunk/filemanager
+	# Changeing SCGI mount point in rutorrent config.
+	sed -i "s/\/RPC2/\/rutorrent\/RPC2/g" ./rutorrent/conf/config.php
 
-# Configure plugins
-cd $current_dir
+	mv -f rutorrent /var/www/html/
+	rm -v rutorrent-3.6.tar.gz
 
-sudo rm /var/www/rutorrent/plugins/create/conf.php
-sudo cp ../sources/plugins/create/conf.php /var/www/rutorrent/plugins/create/conf.php
+	# Changing permissions for rutorrent and plugins.
+	chown -R www-data.www-data /var/www/html/rutorrent
+	chmod -R 775 /var/www/html/rutorrent
 
-sudo rm /var/www/rutorrent/plugins/filemanager/conf.php
-sudo cp ../sources/plugins/filemanager/conf.php /var/www/rutorrent/plugins/filemanager/conf.php
 
-sudo rm /var/www/rutorrent/plugins/mobile/init.js
-sudo cp ../sources/plugins/mobile/init.js /var/www/rutorrent/plugins/mobile/init.js
 
 # Configure nginx
 sudo sed -i "s@PATHTOCHANGE@$path@g" ../sources/nginx/rutorrent.conf
