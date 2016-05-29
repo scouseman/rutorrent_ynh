@@ -67,7 +67,7 @@ sudo cp ../sources/nginx/rutorrent.conf /etc/nginx/conf.d/$domain.d/rutorrent.co
 
 # Configure rutorrent
 sudo sed -i "s@DATA_DIR@$data_dir@g" ../sources/rutorrent/config.php
-sudo cp ../sources/rutorrent/config.php /var/www/rutorrent/conf/config.php
+sudo cp ../sources/rutorrent/config.php /var/www/html/rutorrent/conf/config.php
 sudo chown -R www-data:www-data /var/www/rutorrent
 
 # Check port availability
