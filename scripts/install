@@ -40,22 +40,15 @@ sudo apt-get install -y htop automake libcppunit-dev libtool build-essential pkg
 
 # Install rutorrent
 
-	curl -L http://dl.bintray.com/novik65/generic/rutorrent-3.6.tar.gz -o rutorrent-3.6.tar.gz
-	tar -zxvf rutorrent-3.6.tar.gz
 
-	if [ -d /var/www/html/rutorrent ]; then
-		rm -r /var/www/html/rutorrent
-	fi
 
 	# Changeing SCGI mount point in rutorrent config.
 	sed -i "s/\/RPC2/\/rutorrent\/RPC2/g" ./rutorrent/conf/config.php
 
-	mv -f rutorrent /var/www/html/
-	rm -v rutorrent-3.6.tar.gz
 
 	# Changing permissions for rutorrent and plugins.
-	chown -R www-data.www-data /var/www/html/rutorrent
-	chmod -R 775 /var/www/html/rutorrent
+	chown -R www-data.www-data /var/www/rutorrent
+	chmod -R 775 /var/www/rutorrent
 
 
 
@@ -67,7 +60,7 @@ sudo cp ../sources/nginx/rutorrent.conf /etc/nginx/conf.d/$domain.d/rutorrent.co
 
 # Configure rutorrent
 sudo sed -i "s@DATA_DIR@$data_dir@g" ../sources/rutorrent/config.php
-sudo cp ../sources/rutorrent/config.php /var/www/html/rutorrent/conf/config.php
+sudo cp ../sources/rutorrent/config.php /var/www/rutorrent/conf/config.php
 sudo chown -R www-data:www-data /var/www/rutorrent
 
 # Check port availability
@@ -79,12 +72,6 @@ fi
 # Open port in firewall
 sudo yunohost firewall allow TCP 45069 > /dev/null 2>&1
 
-
-
-# Start rtorrent
-sudo service rtorrent start
-sudo yunohost app ssowatconf
-sudo service nginx reload
 
 # Save config
 sudo yunohost app setting rutorrent data_dir -v $data_dir
